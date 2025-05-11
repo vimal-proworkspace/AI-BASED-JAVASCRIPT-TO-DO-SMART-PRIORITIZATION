@@ -1,0 +1,109 @@
+<html>
+<head>
+  
+  <style> body { font-family: 'Segoe UI', sans-serif; padding: 40px; background: #0f0f0f; color: #ffffff; text-align: center; } input[type="text"] { margin: 8px; padding: 10px 15px; font-size: 16px; width: 250px; border: none; outline: none; border-radius: 5px; background: #111; color: #0ff; box-shadow: 0 0 8px #0ff, inset 0 0 5px #0ff; transition: 0.3s ease; } input[type="text"]:focus { box-shadow: 0 0 12px #0ff, inset 0 0 8px #0ff; } button { margin: 10px; padding: 10px 20px; font-size: 15px; background: #111; color: #0ff; border: none; border-radius: 5px; cursor: pointer; box-shadow: 0 0 10px #0ff, 0 0 20px #0ff inset; transition: 0.3s ease; } button:hover { background: #0ff; color: #000; box-shadow: 0 0 15px #0ff, 0 0 25px #0ff inset; } ul#taskList { list-style: none; padding: 0; margin-top: 20px; text-align: left; display: inline-block; } ul#taskList li { margin: 8px 0; padding: 10px 15px; border-radius: 5px; background: #1a1a1a; color: #0ff; box-shadow: 0 0 6px #0ff; } </style>
+  
+
+  </head>
+  <body>
+    
+    <!-- index.html -->
+<input type="text" id="taskInput" placeholder="Enter your task" />
+<input type="text" id="deadlineInput" placeholder="Deadline or urgency (optional)" />
+<button onclick="addTask()">Add Task</button>
+<ul id="taskList"></ul>
+<button onclick="prioritizeTasks()">Prioritize Tasks with AI</button>
+    <button id="deleteAllBtn">Delete All Tasks</button>
+
+
+<script>
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+function saveTasks() {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+function addTask() {
+  const text = document.getElementById("taskInput").value;
+  const deadline = document.getElementById("deadlineInput").value;
+  if (!text) return;
+  tasks.push({ text, deadline });
+  saveTasks();
+  renderTasks();
+}
+
+    
+    </script>
+    
+    <script>
+   function renderTasks() {
+  const list = document.getElementById("taskList");
+  list.innerHTML = "";
+  tasks.forEach((task, i) => {
+    const li = document.createElement("li");
+    li.textContent = `${task.text} (${task.deadline || "No deadline"})`;
+    list.appendChild(li);
+  });
+}
+renderTasks();
+
+      
+      async function prioritizeTasks() {
+  const prompt = `Rank the following tasks by priority (based on urgency, deadlines, and importance):\n` + 
+    tasks.map((t, i) => `${i + 1}. ${t.text} ${t.deadline ? '(Deadline: ' + t.deadline + ')' : ''}`).join("\n");
+
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer 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", // Use free key from OpenRouter.ai
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "openai/gpt-3.5-turbo",
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
+
+  const data = await res.json();
+  alert("AI Prioritized Tasks:\n" + data.choices[0].message.content);
+}
+
+function addTask() {
+  const text = document.getElementById("taskInput").value.trim();
+  const deadline = document.getElementById("deadlineInput").value.trim();
+  if (!text) return;
+  tasks.push({ text, deadline });
+  saveTasks();
+  renderTasks();
+  document.getElementById("taskInput").value = "";
+  document.getElementById("deadlineInput").value = "";
+}
+    
+
+document.getElementById("deleteAllBtn").addEventListener("click", function() {
+    // Clear tasks from localStorage
+    localStorage.removeItem("tasks");
+
+    // Clear the tasks array
+    tasks = [];
+
+    // Re-render the task list (which will now be empty)
+    renderTasks();
+});
+
+
+
+    </script>
+    
+    <script>
+function deleteAllTasks() {
+  if (confirm("Are you sure you want to delete all tasks?")) {
+    tasks = [];
+    saveTasks();
+    renderTasks();
+  }
+}
+
+</script>
+  </body>
+</html>
